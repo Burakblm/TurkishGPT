@@ -91,7 +91,8 @@ class Trainer:
             print(f"Epoch: {epoch}")
 
             for i, (inputs, targets) in enumerate(data_loader):
-                
+                inputs = inputs.to(device)
+                targets = targets.to(device)
                 logits, loss = model(inputs, targets)
                 self.optimizer.zero_grad(set_to_none=True)
                 loss.backward()
