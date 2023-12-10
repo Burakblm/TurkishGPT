@@ -54,6 +54,7 @@ class Trainer:
     def __init__(self, args: TrainArgs, model: Transformer, train_dataset):
         self.args = args
         self.model = model
+        self.model = self.model.to(device)
         self.optimizer = torch.optim.AdamW(model.parameters(), lr=self.args.learning_rate)
         self.train_dataset = train_dataset
 
@@ -72,7 +73,7 @@ class Trainer:
         return idx
     
     def oku(self, max_new_tokens):
-        inpt = torch.tensor([tokenizer.encode("mustafa kemal atatürk")], dtype=torch.long)
+        inpt = torch.tensor([tokenizer.encode("mustafa kemal atatürk")], dtype=torch.long, device=device)
         print(tokenizer.decode(self.generate(self.model, inpt, max_new_tokens=max_new_tokens)[0].tolist()))
 
     
