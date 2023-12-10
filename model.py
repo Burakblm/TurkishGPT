@@ -153,7 +153,7 @@ class Transformer(nn.Module):
         assert T <= self.args.block_size, f"Cannot forward sequence of length {T}, block size is only {self.args.block_size}"
 
         pos = torch.arange(0, T, dtype=torch.long, device=device)
-
+        idx = idx.to(torch.long)
         token_emb = self.tok_embedding(idx)
         positional_emb = self.pos_embedding(pos)
         x = self.drop(token_emb + positional_emb)
@@ -164,6 +164,7 @@ class Transformer(nn.Module):
         x = self.ln(x)
 
         if targets is not None:
+            targets = targets.to(torch.long)
             logits = self.output(x)
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
         else:
