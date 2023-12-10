@@ -80,15 +80,15 @@ class Trainer:
     def run(self):
         model, args = self.model, self.args
 
-        data_loader = DataLoader(
-            dataset = self.train_dataset,
-            batch_size = args.batch_size,
-            shuffle=False,
-            num_workers=0
-        )
-
         for epoch in range(args.num_epochs):
             print(f"Epoch: {epoch}")
+
+            data_loader = DataLoader(
+                dataset = self.train_dataset,
+                batch_size = args.batch_size,
+                shuffle=False,
+                num_workers=0
+            )
 
             for i, (inputs, targets) in enumerate(data_loader):
                 inputs = inputs.to(device)
