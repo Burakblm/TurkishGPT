@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import math
+import random
 from prepare_data import load_tensor
 
 
@@ -14,7 +15,8 @@ class GPTDataset(Dataset):
 
     def __getitem__(self, index):
         if self.current_index >= self.n_samples:
-            raise IndexError("Index Error!")
+            self.current_index = random.randint(0, self.block_size)
+            
         
         start_index = self.current_index
         end_index = min(start_index + self.block_size, len(self.data))
