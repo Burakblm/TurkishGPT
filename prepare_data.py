@@ -28,7 +28,7 @@ def save_tensor(tensor: torch.Tensor, save_name: str):
     torch.save(tensor, save_name)
 
 def load_tensor(path: str = "train"):
-    path = "/Users/burakbulama/Desktop/TurkishGPT/data/" + path + ".pt"
+    path = os.getcwd() + "/data/" + path + ".pt"
     data = torch.load(path)
     return data
 
