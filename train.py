@@ -1,6 +1,7 @@
 import os
 import time
 import math
+from dataclasses import dataclass
 
 import torch
 from torch.nn import functional as F
@@ -21,35 +22,39 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 10
 max_iters = 100
 
+@dataclass
+class TrainArgs:
+    eval_iters: int = 200
+    model_args: ModelArgs
+    learning_rate: float = 1e-3
+    dataset: str = "nutuk"
+    batch_size: int = 32
+    block_size: int = 32
+    vocab_size: int = 32000
+    n_layer: int = 12
+    n_head: int = 12
+    n_embd: int = 12
+    dropout: float = 0.0
+    bias: bool = False
+    out_dir: str = "out"
+    
 
-batch_size = 32
-block_size = 32
-vocab_size= 32000
-n_layer = 4
-n_head = 4
-n_embd = 256
-dropout = 0.0
-bias = False
 
-train_data = GPTDataset("train", batch_size=batch_size, block_size=block_size)
-train_dataloader = DataLoader(dataset=train_data, batch_size=batch_size, shuffle=False, num_workers=0)
+class Trainer:
+    def __init__(self, args: TrainArgs, model: Transformer, train_dataset):
+        self.args = args
+        self.model = model
+        self.optimizer = None
+        self.train_dataset = train_dataset
 
-val_data = GPTDataset("val", batch_size=batch_size, block_size=block_size)
-val_dataloader = DataLoader(dataset=train_data, batch_size=batch_size, shuffle=False, num_workers=0)
 
-split = {"train": train_dataloader,
-         "val": val_dataloader}
+    def get_parameters_num(self):
+        return sum(p.numel() for p in self.model.parameters())/1e6
+    
 
-model_args = dict(block_size=block_size,
-                  vocab_size=vocab_size,
-                  n_layer=n_layer,
-                  n_head=n_head,
-                  n_embd=n_embd,
-                  dropout=dropout,
-                  bias=bias
-                  )
 
-turkgptconfing = ModelArgs(**model_args)
+
+turkgptconfing = ModelArgs()
 model = Transformer(turkgptconfing)
 
 print(sum(p.numel() for p in model.parameters())/1e6, 'M parameters')
@@ -93,6 +98,6 @@ def generate(model, idx, max_new_tokens):
             idx_next = torch.multinomial(probs, num_samples=1)
             idx = torch.cat((idx, idx_next), dim=1)
         return idx
-
+          
 inpt = torch.tensor([tokenizer.encode("mustafa kemal atatürk")], dtype=torch.long)
 print(tokenizer.decode(generate(model, inpt, max_new_tokens=200)[0].tolist()))
