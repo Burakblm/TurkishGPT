@@ -24,8 +24,8 @@ max_iters = 100
 block_size = 1024
 batch_size = 16
 vocab_size= 32000
-n_layer = 4
-n_head = 4
+n_layer = 8
+n_head = 8
 n_embd= 256
 dropout = 0.0
 bias = False
@@ -41,8 +41,8 @@ class TrainArgs:
     learning_rate: float = 1e-3
     dataset: str = "nutuk"
     vocab_size: int = 32000
-    n_layer: int = 4
-    n_head: int = 4
+    n_layer: int = 8
+    n_head: int = 8
     n_embd: int = 256
     dropout: float = 0.0
     bias: bool = False
@@ -96,8 +96,8 @@ class Trainer:
                 logits, loss = model(inputs, targets)
                 self.optimizer.zero_grad(set_to_none=True)
                 loss.backward()
-                print(loss.item())
                 self.optimizer.step()
+            print(loss.item())
 
 
 if __name__ == "__main__":
