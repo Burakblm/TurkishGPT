@@ -28,7 +28,8 @@ def save_tensor(tensor: torch.Tensor, save_name: str):
     torch.save(tensor, save_name)
 
 def load_tensor(path: str = "train"):
-    path = path + ".pt"
+    #path = path + ".pt"
+    path = "/Users/burakbulama/Desktop/TurkishGPT/data/train.pt"
     data = torch.load(path)
     return data
 
@@ -38,4 +39,3 @@ if __name__ == "__main__":
     data_path = str(sys.argv[1])
     split_rate = float(sys.argv[2])
     prepare_data(data_path, split_rate)
-    
