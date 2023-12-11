@@ -153,5 +153,5 @@ if __name__ == "__main__":
     import sys
     total_epochs = int(sys.argv[1])
     save_every = int(sys.argv[2])
-    snapshot_path = str(sys.args[3])
+    snapshot_path = str(sys.argv[3])
     main(total_epoch=total_epochs, save_every=save_every, snapshot_path=snapshot_path)
