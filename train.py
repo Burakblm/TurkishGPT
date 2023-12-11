@@ -60,15 +60,16 @@ def ddp_setup():
 class Trainer:
 
     def __init__(self,
-                args: TrainArgs,
                 model: Transformer,
                 train_data: Dataset,
                 optimizer: torch.optim.Optimizer,
                 save_every: int,
                 snapshot_path: str,
+                args: Optional[TrainArgs] = None,
                 val_data: Optional[Dataset] = None,
                 ) -> None:
         
+        self.args = args
         self.gpu_id = int(os.environ["LOCAL_RANK"])
         self.model = model.to(self.gpu_id)
         self.train_data = train_data
@@ -144,7 +145,7 @@ def main(total_epoch: int, save_every: int, snapshot_path: str = "snapshot.pt"):
     ddp_setup()
     dataset, model, optimizer = load_train_objs()
     train_data = prepare_dataloader(dataset, batch_size=32)
-    trainer = Trainer(model, train_data, optimizer, save_every, snapshot_path)
+    trainer = Trainer(model=model, train_data=train_data, optimizer=optimizer, save_every=save_every, snapshot_path=snapshot_path)
     trainer.train(total_epoch)
     destroy_process_group()
 
@@ -153,5 +154,4 @@ if __name__ == "__main__":
     import sys
     total_epochs = int(sys.argv[1])
     save_every = int(sys.argv[2])
-    snapshot_path = str(sys.argv[3])
-    main(total_epoch=total_epochs, save_every=save_every, snapshot_path=snapshot_path)
+    main(total_epoch=total_epochs, save_every=save_every)
