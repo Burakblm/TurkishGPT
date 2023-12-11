@@ -2,11 +2,17 @@ import os
 import time
 import math
 from dataclasses import dataclass
+from typing import Optional
 
 import torch
 from torch.nn import functional as F
-from torch.utils.data import DataLoader
+import torch.multiprocessing as mp
+from torch.utils.data.distributed import DistributedSampler # verileri tüm gpu lara dağıtmak için
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.distributed import init_process_group, destroy_process_group
+from torch.utils.data import DataLoader, Dataset
 import numpy as np
+import os
 
 from model import ModelArgs, Transformer
 from prepare_data import load_tensor, prepare_data
@@ -31,7 +37,6 @@ dropout = 0.0
 bias = False
 learning_rate = 1e-3
 
-
 @dataclass
 class TrainArgs:
     num_epochs: int = 1
@@ -47,73 +52,70 @@ class TrainArgs:
     dropout: float = 0.0
     bias: bool = False
     out_dir: str = "out"
-    
 
+
+def ddp_setup():
+    init_process_group(backend="nccl")
 
 class Trainer:
-    def __init__(self, args: TrainArgs, model: Transformer, train_dataset):
-        self.args = args
-        self.model = model
-        self.model = self.model.to(device)
-        self.optimizer = torch.optim.AdamW(model.parameters(), lr=self.args.learning_rate)
-        self.train_dataset = train_dataset
-
-
-    def get_parameters_num(self):
-        return sum(p.numel() for p in self.model.parameters())/1e6
     
-    def generate(self, model, idx, max_new_tokens):
-        for _ in range(max_new_tokens):
-            idx_cond = idx[:, -block_size:]
-            logits, loss = model(idx_cond)
-            logits = logits[:, -1, :]
-            probs = F.softmax(logits, dim=-1)
-            idx_next = torch.multinomial(probs, num_samples=1)
-            idx = torch.cat((idx, idx_next), dim=1)
-        return idx
-    
-    def oku(self, max_new_tokens):
-        inpt = torch.tensor([tokenizer.encode("mustafa kemal atatürk")], dtype=torch.long, device=device)
-        print(tokenizer.decode(self.generate(self.model, inpt, max_new_tokens=max_new_tokens)[0].tolist()))
+    def __init__(self,
+                args: TrainArgs,
+                model: Transformer,
+                train_data: Dataset,
+                optimizer: torch.optim.Optimizer,
+                save_every: int,
+                snapshot_path: str,
+                val_data: Optional[Dataset] = None,
+                ) -> None:
+        
+        self.gpu_id = int(os.environ["LOCAL_RANK"])
+        self.model = model.to(self.gpu_id)
+        self.train_data = train_data
+        self.val_data = val_data
+        self.optimizer = optimizer
+        self.save_every = save_every
+        self.epochs_run = 0
+        if os.path.exists(snapshot_path):
+            print("Loading Snapshot")
+            self._load_snapshot(snapshot_path)
+        self.model = DDP(self.model, device_ids=[self.gpu_id])
 
-    
-    def run(self):
-        model, args = self.model, self.args
+    def _load_snapshot(self, snapshot_path):
+        snapshot = torch.load(snapshot_path)
+        self.model.load_state_dict(snapshot["MODEL_STATE"])
+        self.epochs_run = snapshot["EPOCHS_RUN"]
+        print(f"Model training continues from the {self.epochs_run} epoch")
 
-        for epoch in range(args.num_epochs):
-            print(f"Epoch: {epoch}")
+    def _run_batch(self, inputs, targets):
+        logits, loss = self.model(inputs, targets)
+        self.optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        self.optimizer.step()
 
-            data_loader = DataLoader(
-                dataset = self.train_dataset,
-                batch_size = args.batch_size,
-                shuffle=False,
-                num_workers=0
-            )
+    def _run_epoch(self, epoch):
+        bs = len(next(iter(self.train_data))[0])
+        print(f"[GPU:{self.gpu_id}] Epoch {epoch} | Batchsize: {bs} | Steps: {len(self.train_data)}")
+        for inputs, targets in self.train_data:
+            inputs = inputs.to(self.gpu_id)
+            targets = targets.to(self.gpu_id)
+            self._run_batch(inputs, targets)
 
-            for i, (inputs, targets) in enumerate(data_loader):
-                inputs = inputs.to(device)
-                targets = targets.to(device)
-                logits, loss = model(inputs, targets)
-                self.optimizer.zero_grad(set_to_none=True)
-                loss.backward()
-                self.optimizer.step()
-            print(loss.item())
+    def _save_snapshot(self, epoch):
+        snapshot = {}
+        snapshot["MODEL_STATE"] = self.model.module.state_dict()
+        snapshot["EPOCHS_RUN"] = epoch
+        #torch.save(snapshot, "snapshot.pt")
+        print(f"Epoch {epoch} | training snapshot save at snapshot.pt")
 
-
-if __name__ == "__main__":
-    import sys
-    num_epochs = int(sys.argv[1])
-    block_size = int(sys.argv[2])
-    batch_size = int(sys.argv[3])
+    def train(self, max_epochs: int):
+        for epoch in range(self.epochs_run, max_epochs):
+            self._run_epoch(epoch)
+            if self.gpu_id == 0 and epoch % self.save_every == 0:
+                self._save_snapshot(epoch)
 
 
-    train_args = dict(
-        num_epochs=num_epochs,
-        batch_size=batch_size,
-        block_size=block_size,
-    )
-
-    model_args = dict(
+model_args = dict(
         vocab_size=vocab_size,
         n_layer=n_layer,
         n_head=n_head,
@@ -121,14 +123,34 @@ if __name__ == "__main__":
         bias=bias,
         n_embd=n_embd,
     )
+turkgptconfing = ModelArgs(**model_args)
 
-    trainer_args = TrainArgs(**train_args)
-
-    turkgptconfing = ModelArgs(**model_args)
+def load_train_objs():
+    train_data = GPTDataset("train", batch_size=1, block_size=32)
     model = Transformer(turkgptconfing)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+    return train_data, model, optimizer
 
-    train_data = GPTDataset("train", batch_size=1, block_size=block_size)
+def prepare_dataloader(dataset: Dataset, batch_size: int):
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        pin_memory=True,
+        shuffle=False,
+        sampler=DistributedSampler(dataset)
+    )
 
-    trainer = Trainer(trainer_args, model, train_data)
-    trainer.run()
-    trainer.oku(1000)
+def main(total_epoch: int, save_every: int, snapshot_path: str = "snapshot.pt"):
+    ddp_setup()
+    dataset, model, optimizer = load_train_objs()
+    train_data = prepare_dataloader(dataset, batch_size=32)
+    trainer = Trainer(model, train_data, optimizer, save_every, snapshot_path)
+    trainer.train(total_epoch)
+    destroy_process_group()
+
+
+if __name__ == "__main__":
+    import sys
+    total_epochs = int(sys.argv[1])
+    save_every = int(sys.argv[2])
+    main(save_every, total_epochs)
