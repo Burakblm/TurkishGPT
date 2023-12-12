@@ -89,7 +89,7 @@ class Trainer:
             self.model = model.to(self.gpu_id)
             self.model = DDP(self.model, device_ids=[self.gpu_id])
 
-        self.model = model.to(device)
+        self.model = model.to(self.device)
         self.epochs_run = 0
         self.train_data = train_data
         self.val_data = val_data
@@ -115,10 +115,10 @@ class Trainer:
 
     def _run_epoch(self, epoch):
         bs = len(next(iter(self.train_data))[0])
-        print(f"[GPU:{self.gpu_id if self.ddp else device}] Epoch {epoch} | Batchsize: {bs} | Steps: {len(self.train_data)}")
+        print(f"[GPU:{self.gpu_id if self.ddp else self.device}] Epoch {epoch} | Batchsize: {bs} | Steps: {len(self.train_data)}")
         for i, (inputs, targets) in enumerate(self.train_data):
-            inputs = inputs.to(self.gpu_id if self.ddp else device)
-            targets = targets.to(self.gpu_id if self.ddp else device)
+            inputs = inputs.to(self.gpu_id if self.ddp else self.device)
+            targets = targets.to(self.gpu_id if self.ddp else self.device)
             self._run_batch(inputs, targets)
             if i % eval_iters == 0:
                 out = self.calculate_loss()
@@ -150,7 +150,7 @@ class Trainer:
     def train(self, max_epochs: int):
         for epoch in range(self.epochs_run, max_epochs):
             self._run_epoch(epoch)
-            if self.gpu_id if self.ddp else device == 0 and epoch % self.save_every == 0:
+            if self.gpu_id if self.ddp else self.device == 0 and epoch % self.save_every == 0:
                 self._save_snapshot(epoch)
 
 
