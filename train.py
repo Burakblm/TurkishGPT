@@ -152,8 +152,12 @@ class Trainer:
     def train(self, max_epochs: int):
         for epoch in range(self.epochs_run, max_epochs):
             self._run_epoch(epoch)
-            if self.gpu_id if self.ddp else self.device == 0 and epoch % self.save_every == 0:
-                self._save_snapshot(epoch)
+            if self.ddp:
+                if self.gpu_id == 0 and epoch % self.save_every == 0:
+                    self._save_snapshot(epoch)
+            else:
+                if epoch % self.save_every == 0:
+                    self._save_snapshot(epoch)
 
 
 model_args = dict(
@@ -191,13 +195,13 @@ def prepare_dataloader(dataset: Dataset, batch_size: int):
             num_workers=0
         )
 
-def main(total_epoch: int, save_every: int, snapshot_path: str = "snapshot.pt"):
+def main(total_epoch: int, batch_size: int, save_every: int, snapshot_path: str = "snapshot.pt"):
     if ddp:
         ddp_setup()
     train_data, val_data, model, optimizer = load_train_objs()
-    train_data = prepare_dataloader(train_data, batch_size=32)
-    val_data = prepare_dataloader(val_data, batch_size=32)
-    trainer = Trainer(model=model, train_data=train_data, val_data=val_data, optimizer=optimizer, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path,eval_iters=eval_iters, device=device)
+    train_data = prepare_dataloader(train_data, batch_size=batch_size)
+    val_data = prepare_dataloader(val_data, batch_size=batch_size)
+    trainer = Trainer(model=model, train_data=train_data, val_data=val_data, optimizer=optimizer, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path, eval_iters=eval_iters, device=device)
     trainer.train(total_epoch)
     if ddp:
         destroy_ddp()
@@ -205,5 +209,6 @@ def main(total_epoch: int, save_every: int, snapshot_path: str = "snapshot.pt"):
 if __name__ == "__main__":
     import sys
     total_epochs = int(sys.argv[1])
-    save_every = int(sys.argv[2])
-    main(total_epoch=total_epochs, save_every=save_every)
+    batch_size = int(sys.argv[2])
+    save_every = int(sys.argv[3])
+    main(total_epoch=total_epochs, batch_size=batch_size, save_every=save_every)
