@@ -108,9 +108,6 @@ class Trainer:
         print(f"Model training continues from the {self.epochs_run} epoch")
 
     def _run_batch(self, inputs, targets):
-        print("Run Batch funciton: inputs",inputs.device)
-        print("Run Batch funciton: targets",targets.device)
-
         logits, loss = self.model(inputs, targets)
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -144,8 +141,8 @@ class Trainer:
                 data = iter(self.split_data[i])
                 for j in range(self.eval_iters):
                     inputs, targets = next(data)
-                    print("Loss : ", inputs.device)
-                    print("Loss : ", targets.device)
+                    inputs = inputs.to(self.gpu_id if self.ddp else self.device)
+                    targets = targets.to(self.gpu_id if self.ddp else self.device)
                     logits, loss = self.model(inputs, targets)
                     losses[j] = loss.item()
             out[i] = losses.mean()
@@ -200,7 +197,7 @@ def main(total_epoch: int, save_every: int, snapshot_path: str = "snapshot.pt"):
     train_data, val_data, model, optimizer = load_train_objs()
     train_data = prepare_dataloader(train_data, batch_size=32)
     val_data = prepare_dataloader(val_data, batch_size=32)
-    trainer = Trainer(model=model, train_data=train_data, optimizer=optimizer, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path,eval_iters=eval_iters, device=device)
+    trainer = Trainer(model=model, train_data=train_data, val_data=val_data, optimizer=optimizer, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path,eval_iters=eval_iters, device=device)
     trainer.train(total_epoch)
     if ddp:
         destroy_ddp()
