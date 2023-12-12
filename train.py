@@ -195,7 +195,7 @@ def main(total_epoch: int, save_every: int, snapshot_path: str = "snapshot.pt"):
     train_data, val_data, model, optimizer = load_train_objs()
     train_data = prepare_dataloader(train_data, batch_size=32)
     val_data = prepare_dataloader(val_data, batch_size=32)
-    trainer = Trainer(model=model, train_data=train_data, optimizer=optimizer, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path,eval_iters=eval_iters)
+    trainer = Trainer(model=model, train_data=train_data, optimizer=optimizer, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path,eval_iters=eval_iters, device=device)
     trainer.train(total_epoch)
     if ddp:
         destroy_ddp()
