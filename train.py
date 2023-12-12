@@ -108,6 +108,9 @@ class Trainer:
         print(f"Model training continues from the {self.epochs_run} epoch")
 
     def _run_batch(self, inputs, targets):
+        print("Run Batch funciton: inputs",inputs.device)
+        print("Run Batch funciton: targets",targets.device)
+
         logits, loss = self.model(inputs, targets)
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -141,6 +144,8 @@ class Trainer:
                 data = iter(self.split_data[i])
                 for j in range(self.eval_iters):
                     inputs, targets = next(data)
+                    print("Loss : ", inputs.device)
+                    print("Loss : ", targets.device)
                     logits, loss = self.model(inputs, targets)
                     losses[j] = loss.item()
             out[i] = losses.mean()
