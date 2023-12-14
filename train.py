@@ -123,7 +123,7 @@ class Trainer:
             inputs = inputs.to(self.gpu_id if self.ddp else self.device)
             targets = targets.to(self.gpu_id if self.ddp else self.device)
             self._run_batch(inputs, targets)
-            if i % eval_iters == 0:
+            if i % self.eval_iters == 0:
                 out = self.calculate_loss()
                 print(f"Train loss: {out['train']:.4f}" + (f" | Val loss : {out['val']:.4f}" if self.val_data is not None else ""))
 
@@ -159,17 +159,22 @@ class Trainer:
             if self.ddp:
                 if self.gpu_id == 0 and epoch % self.save_every == 0:
                     self._save_snapshot(epoch)
+                idx = torch.zeros((1, 1), dtype=torch.long, device=self.gpu_id)
+                res = self.model.generate(idx=idx, do_sample=True, top_k=200, temprature=0.8, max_new_tokens=20)[0].tolist()
+                print(tokenizer.decode(res))
+
             else:
                 if epoch % self.save_every == 0:
                     self._save_snapshot(epoch)
+                idx = torch.zeros((1, 1), dtype=torch.long, device=device)
+                res = self.model.generate(idx=idx, do_sample=True, top_k=200, temprature=0.8, max_new_tokens=20)[0].tolist()
+                print(tokenizer.decode(res))
+
             t1 = time.time()
             dt = t1 - t0
             t0 = t1
             print(f"Epoch: {epoch}: time: {dt*1000:.2f}ms\n")
 
-            idx = torch.zeros((1, 1), dtype=torch.long, device=device)
-            res = self.model.generate(idx=idx, do_sample=True, top_k=200, temprature=0.8, max_new_tokens=20)[0].tolist()
-            print(tokenizer.decode(res))
 
 
 model_args = dict(
