@@ -33,9 +33,9 @@ max_iters = 100
 block_size = 1024
 batch_size = 16
 vocab_size= 32000
-n_layer = 12
-n_head = 12
-n_embd= 768
+n_layer = 2
+n_head = 2
+n_embd= 256
 dropout = 0.0
 bias = False
 learning_rate = 1e-4
@@ -160,6 +160,8 @@ class Trainer:
                     self._save_snapshot(epoch)
             idx = torch.zeros((1, 1), dtype=torch.long, device=device)
             res = self.model.generate(idx=idx, max_new_tokens=300, top_k=10, temprature=0.8)
+            print(res)
+            print(res.dtype)
             print(tokenizer.decode(res))
 
 
@@ -205,6 +207,7 @@ def main(total_epoch: int, batch_size: int, save_every: int, snapshot_path: str 
     train_data = prepare_dataloader(train_data, batch_size=batch_size)
     val_data = prepare_dataloader(val_data, batch_size=batch_size)
     trainer = Trainer(model=model, train_data=train_data, val_data=val_data, optimizer=optimizer, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path, eval_iters=eval_iters, device=device)
+    print(f"number of model parameters: {sum(i.numel() for i in model.parameters()/1e6)} M")
     trainer.train(total_epoch)
     if ddp:
         destroy_ddp()
