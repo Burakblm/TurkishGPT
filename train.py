@@ -90,8 +90,9 @@ class Trainer:
             self.gpu_id = int(os.environ["LOCAL_RANK"])
             self.model = model.to(self.gpu_id)
             self.model = DDP(self.model, device_ids=[self.gpu_id])
+        else:
+            self.model = model.to(self.device)
 
-        self.model = model.to(self.device)
         self.epochs_run = 0
         self.train_data = train_data
         self.val_data = val_data
