@@ -30,12 +30,12 @@ ddp = int(os.environ.get("RANK", -1)) != -1
 
 eval_iters = 200
 max_iters = 100
-block_size = 1024
+block_size = 2048
 batch_size = 16
 vocab_size= 32000
-n_layer = 2
-n_head = 2
-n_embd= 256
+n_layer = 24
+n_head = 16
+n_embd= 2048
 dropout = 0.0
 bias = False
 learning_rate = 1e-4
@@ -44,14 +44,14 @@ learning_rate = 1e-4
 class TrainArgs:
     num_epochs: int = 10
     batch_size: int = 16
-    block_size: int = 1024
+    block_size: int = 2048
     eval_iters: int = 200
     learning_rate: float = 1e-4
     dataset: str = "nutuk"
     vocab_size: int = 32000
-    n_layer: int = 12
-    n_head: int = 12
-    n_embd: int = 768
+    n_layer: int = 24
+    n_head: int = 16
+    n_embd: int = 2048
     dropout: float = 0.0
     bias: bool = False
     out_dir: str = "out"
@@ -159,7 +159,7 @@ class Trainer:
                 if epoch % self.save_every == 0:
                     self._save_snapshot(epoch)
             idx = torch.zeros((1, 1), dtype=torch.long, device=device)
-            res = self.model.generate(idx=idx, do_sample=True, top_k=20, temprature=0.8, max_new_tokens=20)[0].tolist()
+            res = self.model.generate(idx=idx, do_sample=True, top_k=200, temprature=0.8, max_new_tokens=20)[0].tolist()
             print(tokenizer.decode(res))
 
 

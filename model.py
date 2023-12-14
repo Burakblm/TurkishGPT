@@ -10,11 +10,11 @@ from torch.nn import functional as F
 
 @dataclass
 class ModelArgs:
-    block_size: int = 1024
+    block_size: int = 2048
     vocab_size: int = 32000
-    n_layer: int = 12
-    n_head: int = 412
-    n_embd: int = 768
+    n_layer: int = 24
+    n_head: int = 16
+    n_embd: int = 2048
     dropout: float = 0.0
     bias: bool = False
     norm_eps: float = 1e-4
