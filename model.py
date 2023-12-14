@@ -11,14 +11,13 @@ from torch.nn import functional as F
 @dataclass
 class ModelArgs:
     block_size: int = 1024
-    vocab_size: int = 50304
+    vocab_size: int = 32000
     n_layer: int = 12
-    n_head: int = 12
+    n_head: int = 412
     n_embd: int = 768
     dropout: float = 0.0
     bias: bool = False
-    norm_eps: float = 1e-5
-    n_kv_heads: Optional[int] = None
+    norm_eps: float = 1e-4
 
 
 class LayerNorm(nn.Module):
@@ -172,3 +171,27 @@ class Transformer(nn.Module):
             loss = None
 
         return logits, loss
+    
+    def generate(self, idx, max_new_tokens, do_sample: bool = False, temprature: float = 1.0, top_k: Optional[int] = None):
+
+        for _ in range(max_new_tokens):
+            # sequence cropping
+            idx_crop = idx if idx.size(1) <= self.args.block_size else idx[:, -self.args.block_size:]
+
+            logits, _ = self(idx_crop)
+
+            logits = logits[:, -1, :] / temprature
+
+            if top_k is not None:
+                v, _ = torch.topk(logits, top_k)
+                logits[logits < v[:, [-1]]] = float("-Inf")
+
+            props = F.softmax(logits, dim=-1)
+
+            if do_sample:
+                idx_next = torch.multinomial(props, num_samples=1)
+            else:
+                _, idx_next = torch.topk(props, k=1, dim=-1)
+
+            idx = torch.cat((idx, idx_next), dim=1)
+        return idx
