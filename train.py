@@ -159,9 +159,7 @@ class Trainer:
                 if epoch % self.save_every == 0:
                     self._save_snapshot(epoch)
             idx = torch.zeros((1, 1), dtype=torch.long, device=device)
-            res = self.model.generate(idx=idx, max_new_tokens=300, top_k=10, temprature=0.8)
-            print(res)
-            print(res.dtype)
+            res = self.model.generate(idx=idx, do_sample=True, top_k=20, temprature=0.8, max_new_tokens=20)[0].tolist()
             print(tokenizer.decode(res))
 
 
@@ -207,7 +205,9 @@ def main(total_epoch: int, batch_size: int, save_every: int, snapshot_path: str 
     train_data = prepare_dataloader(train_data, batch_size=batch_size)
     val_data = prepare_dataloader(val_data, batch_size=batch_size)
     trainer = Trainer(model=model, train_data=train_data, val_data=val_data, optimizer=optimizer, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path, eval_iters=eval_iters, device=device)
-    print(f"number of model parameters: {sum(i.numel() for i in model.parameters()/1e6)} M")
+    #num_of_params = sum(p.numel() for p in model.parameters())
+    num_of_params = '{:,}'.format(sum(p.numel() for p in model.parameters())).replace(",", ".")
+    print(f"number of model parameters: {num_of_params}")
     trainer.train(total_epoch)
     if ddp:
         destroy_ddp()
