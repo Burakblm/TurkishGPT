@@ -141,13 +141,13 @@ class Trainer:
         for i in ["train", "val"]:
             if self.split_data[i] is not None:
                 losses = torch.zeros(self.eval_iters)
-                data = iter(self.split_data[i])
-                for j in range(self.eval_iters):
-                    inputs, targets = next(data)
+                for j, (inputs, targets) in enumerate(self.split_data[i]):
                     inputs = inputs.to(self.gpu_id if self.ddp else self.device)
                     targets = targets.to(self.gpu_id if self.ddp else self.device)
                     logits, loss = self.model(inputs, targets)
                     losses[j] = loss.item()
+                    if j % eval_iters == 0:
+                        break
             out[i] = losses.mean()
         self.model.train()
         return out
