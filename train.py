@@ -4,6 +4,7 @@ import math
 from dataclasses import dataclass
 from typing import Optional
 import random
+import re
 
 import torch
 from torch.nn import functional as F
@@ -26,16 +27,17 @@ tokenizer = get_tokenizer()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 ddp = int(os.environ.get("RANK", -1)) != -1
+dtype = 'bfloat16' if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else 'float16' 
 
 
 eval_iters = 200
 max_iters = 100
-block_size = 2048
+block_size = 128
 batch_size = 16
 vocab_size= 32000
-n_layer = 24
-n_head = 16
-n_embd= 2048
+n_layer = 12
+n_head = 12
+n_embd= 768
 dropout = 0.0
 bias = False
 learning_rate = 1e-4
@@ -130,7 +132,7 @@ class Trainer:
         snapshot["EPOCHS_RUN"] = epoch
         torch.save(snapshot, "snapshot.pt")
         print(f"Epoch {epoch} | training snapshot save at snapshot.pt")
-    
+
     @torch.no_grad()
     def calculate_loss(self):
         out = {}
@@ -151,6 +153,7 @@ class Trainer:
         
     def train(self, max_epochs: int):
         for epoch in range(self.epochs_run, max_epochs):
+            t0 = time.time()
             self._run_epoch(epoch)
             if self.ddp:
                 if self.gpu_id == 0 and epoch % self.save_every == 0:
@@ -158,6 +161,11 @@ class Trainer:
             else:
                 if epoch % self.save_every == 0:
                     self._save_snapshot(epoch)
+            t1 = time.time()
+            dt = t1 - t0
+            t0 = t1
+            print(f"Epoch: {epoch}: time: {dt*1000:.2f}ms\n")
+
             idx = torch.zeros((1, 1), dtype=torch.long, device=device)
             res = self.model.generate(idx=idx, do_sample=True, top_k=200, temprature=0.8, max_new_tokens=20)[0].tolist()
             print(tokenizer.decode(res))
@@ -174,10 +182,10 @@ model_args = dict(
 turkgptconfing = ModelArgs(**model_args)
 
 def load_train_objs():
-    train_data = GPTDataset("train", batch_size=1, block_size=32)
-    val_data = GPTDataset("val", batch_size=1, block_size=32)
+    train_data = GPTDataset("train", batch_size=1, block_size=block_size)
+    val_data = GPTDataset("val", batch_size=1, block_size=block_size)
     model = Transformer(turkgptconfing)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     return train_data, val_data, model, optimizer
 
 def prepare_dataloader(dataset: Dataset, batch_size: int):

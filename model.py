@@ -10,11 +10,11 @@ from torch.nn import functional as F
 
 @dataclass
 class ModelArgs:
-    block_size: int = 2048
+    block_size: int = 1024
     vocab_size: int = 32000
-    n_layer: int = 24
-    n_head: int = 16
-    n_embd: int = 2048
+    n_layer: int = 12
+    n_head: int = 12
+    n_embd: int = 768
     dropout: float = 0.0
     bias: bool = False
     norm_eps: float = 1e-4
@@ -138,7 +138,7 @@ class Transformer(nn.Module):
         self.tok_embedding = nn.Embedding(args.vocab_size, args.n_embd)
         self.pos_embedding = nn.Embedding(args.block_size, args.n_embd)
         self.drop = nn.Dropout(args.dropout)
-        self.ln = LayerNorm(args.n_embd, bias=args.bias)
+        self.ln_norm = LayerNorm(args.n_embd, bias=args.bias)
 
         self.layers = nn.ModuleList()
         for layer_id in range(args.n_layer):
@@ -160,7 +160,7 @@ class Transformer(nn.Module):
         for layer in self.layers:
             x = layer(x)
 
-        x = self.ln(x)
+        x = self.ln_norm(x)
 
         if targets is not None:
             targets = targets.to(torch.long)
