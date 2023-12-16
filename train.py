@@ -173,7 +173,7 @@ class Trainer:
             t1 = time.time()
             dt = t1 - t0
             t0 = t1
-            print(f"Epoch: {epoch}: time: {dt*1000:.2f}ms\n")
+            print(f"Epoch: {epoch}: time: {dt}s\n")
 
 
 
