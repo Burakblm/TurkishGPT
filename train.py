@@ -160,14 +160,14 @@ class Trainer:
                 if self.gpu_id == 0 and epoch % self.save_every == 0:
                     self._save_snapshot(epoch)
                 idx = torch.zeros((1, 1), dtype=torch.long, device=self.gpu_id)
-                res = self.model.generate(idx=idx, do_sample=True, top_k=200, temprature=0.8, max_new_tokens=20)[0].tolist()
+                res = self.model.generate(idx=idx, do_sample=True, top_k=10, temprature=0.8, max_new_tokens=500)[0].tolist()
                 print(tokenizer.decode(res))
 
             else:
                 if epoch % self.save_every == 0:
                     self._save_snapshot(epoch)
                 idx = torch.zeros((1, 1), dtype=torch.long, device=device)
-                res = self.model.generate(idx=idx, do_sample=True, top_k=200, temprature=0.8, max_new_tokens=20)[0].tolist()
+                res = self.model.generate(idx=idx, do_sample=True, top_k=10, temprature=0.8, max_new_tokens=500)[0].tolist()
                 print(tokenizer.decode(res))
 
             t1 = time.time()
