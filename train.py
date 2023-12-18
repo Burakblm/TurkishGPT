@@ -209,7 +209,7 @@ def prepare_dataloader(dataset: Dataset, batch_size: int):
             num_workers=0
         )
 
-def main(total_epoch: int, batch_size: int, save_every: int, snapshot_path: str = "snapshot.pt"):
+def main(total_epoch: int, batch_size: int, save_every: int, snapshot_path: str = "/model/snapshot.pt"):
     if ddp:
         ddp_setup()
     train_data, val_data, model, optimizer = load_train_objs()
