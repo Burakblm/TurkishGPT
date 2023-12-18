@@ -159,9 +159,7 @@ class Trainer:
             if self.ddp:
                 if self.gpu_id == 0 and epoch % self.save_every == 0:
                     self._save_snapshot(epoch)
-                idx = torch.zeros((1, 1), dtype=torch.long, device=self.gpu_id)
-                res = self.model.generate(idx=idx, do_sample=True, top_k=10, temprature=0.8, max_new_tokens=500)[0].tolist()
-                print(tokenizer.decode(res))
+                    print("If you are using DDP, you cannot see the model's text outputs during training.")
 
             else:
                 if epoch % self.save_every == 0:
@@ -174,7 +172,6 @@ class Trainer:
             dt = t1 - t0
             t0 = t1
             print(f"Epoch: {epoch}: time: {dt}s\n")
-
 
 
 model_args = dict(
