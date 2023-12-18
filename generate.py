@@ -3,7 +3,7 @@ import os
 from utils import get_tokenizer
 
 
-path = os.getcwd() + "/model/snapshot.pt"
+path = os.getcwd() + "/snapshot.pt"
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 tokenizer = get_tokenizer()
