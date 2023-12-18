@@ -25,6 +25,7 @@ from utils import get_tokenizer
 
 tokenizer = get_tokenizer()
 
+current_path = os.getcwd()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 ddp = int(os.environ.get("RANK", -1)) != -1
 dtype = 'bfloat16' if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else 'float16' 
@@ -209,7 +210,7 @@ def prepare_dataloader(dataset: Dataset, batch_size: int):
             num_workers=0
         )
 
-def main(total_epoch: int, batch_size: int, save_every: int, snapshot_path: str = "/model/snapshot.pt"):
+def main(total_epoch: int, batch_size: int, save_every: int, snapshot_path: str = current_path + "/model/snapshot.pt"):
     if ddp:
         ddp_setup()
     train_data, val_data, model, optimizer = load_train_objs()
