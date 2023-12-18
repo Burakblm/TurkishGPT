@@ -196,7 +196,6 @@ def load_train_objs():
 
 def prepare_dataloader(dataset: Dataset, batch_size: int):
     if ddp:
-        print("run dataloader")
         return DataLoader(
             dataset,
             batch_size=batch_size,

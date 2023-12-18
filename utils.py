@@ -15,3 +15,4 @@ def get_tokenizer():
     tokenizer =  AutoTokenizer.from_pretrained(model_path, use_fast=True)
     return tokenizer
 
+install_tokenizer()
