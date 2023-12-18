@@ -140,21 +140,15 @@ class Trainer:
         self.model.eval()
         for i in ["train", "val"]:
             if self.split_data[i] is not None:
-                losses = []
-                data_loader = self.split_data[i]
-                num_samples = len(data_loader.dataset)
-                selected_indices = random.sample(range(num_samples), min(self.eval_iters, num_samples))
-
-                for j in selected_indices:
-                    for inputs, targets in data_loader:
-                        inputs = inputs.to(self.gpu_id if self.ddp else self.device)
-                        targets = targets.to(self.gpu_id if self.ddp else self.device)
-                        logits, loss = self.model(inputs, targets)
-                        losses.append(loss.item())
-                        break  # Burada bir örnek aldık, döngüyü kırarak bir sonraki örneğe geçebiliriz
-
-                out[i] = torch.tensor(losses).mean().item()
-
+                losses = torch.zeros(self.eval_iters)
+                for j, (inputs, targets) in enumerate(self.split_data[i]):
+                    inputs = inputs.to(self.gpu_id if self.ddp else self.device)
+                    targets = targets.to(self.gpu_id if self.ddp else self.device)
+                    logits, loss = self.model(inputs, targets)
+                    losses[j% self.eval_iters] = loss.item()
+                    if j % self.eval_iters == 0:
+                        break
+            out[i] = losses.mean()
         self.model.train()
         return out
         
@@ -226,6 +220,7 @@ def main(total_epoch: int, batch_size: int, save_every: int, snapshot_path: str 
     train_data = prepare_dataloader(train_data, batch_size=batch_size)
     val_data = prepare_dataloader(val_data, batch_size=batch_size)
     trainer = Trainer(model=model, train_data=train_data, val_data=val_data, optimizer=optimizer, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path, eval_iters=eval_iters, device=device)
+    #num_of_params = sum(p.numel() for p in model.parameters())
     num_of_params = '{:,}'.format(sum(p.numel() for p in model.parameters())).replace(",", ".")
     print(f"number of model parameters: {num_of_params}")
     trainer.train(total_epoch)
