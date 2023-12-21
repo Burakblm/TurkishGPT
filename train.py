@@ -35,7 +35,7 @@ dtype = 'bfloat16' if torch.cuda.is_available() and torch.cuda.is_bf16_supported
 scaler = GradScaler()
 
 
-eval_iters = 200
+eval_iters = 100
 max_iters = 100
 block_size = 128
 batch_size = 16
@@ -161,10 +161,12 @@ class Trainer:
             if self.split_data[i] is not None:
                 losses = torch.zeros(self.eval_iters)
                 for j, (inputs, targets) in enumerate(self.split_data[i]):
+                    j += 1
                     inputs = inputs.to(self.gpu_id if self.ddp else self.device)
                     targets = targets.to(self.gpu_id if self.ddp else self.device)
                     logits, loss = self.model(inputs, targets)
-                    losses[j% self.eval_iters] = loss.item()
+                    losses[j % self.eval_iters] = loss.item()
+                    print(losses)
                     if j % self.eval_iters == 0:
                         break
             out[i] = losses.mean()
@@ -178,14 +180,9 @@ class Trainer:
             if self.ddp:
                 if self.gpu_id == 0 and epoch % self.save_every == 0:
                     self._save_snapshot(epoch)
-                    print("If you are using DDP, you cannot see the model's text outputs during training.")
-
             else:
                 if epoch % self.save_every == 0:
                     self._save_snapshot(epoch)
-                idx = torch.zeros((1, 1), dtype=torch.long, device=device)
-                res = self.model.generate(idx=idx, do_sample=True, top_k=10, temprature=0.8, max_new_tokens=500)[0].tolist()
-                print(tokenizer.decode(res))
 
             t1 = time.time()
             dt = t1 - t0
