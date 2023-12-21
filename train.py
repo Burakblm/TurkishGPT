@@ -27,7 +27,7 @@ from utils import get_tokenizer
 
 tokenizer = get_tokenizer()
 
-current_path = os.getcwd()
+current_path = os.getcwd() + "/model"
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 ddp = int(os.environ.get("RANK", -1)) != -1
 dtype = 'bfloat16' if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else 'float16' 
@@ -105,6 +105,7 @@ class Trainer:
                            "val": self.val_data}
         self.optimizer = optimizer
         self.save_every = save_every
+        print(snapshot_path)
         if os.path.exists(snapshot_path):
             print("Loading Snapshot")
             self._load_snapshot(snapshot_path)
@@ -123,7 +124,6 @@ class Trainer:
         scaler.step(self.optimizer)
         scaler.update()
 
-
     def _run_epoch(self, epoch):
         bs = len(next(iter(self.train_data))[0])
         print(f"[GPU:{self.gpu_id if self.ddp else self.device}] Epoch {epoch} | Batchsize: {bs} | Steps: {len(self.train_data)}")
@@ -131,9 +131,14 @@ class Trainer:
             inputs = inputs.to(self.gpu_id if self.ddp else self.device)
             targets = targets.to(self.gpu_id if self.ddp else self.device)
             self._run_batch(inputs, targets)
-            if i % self.eval_iters == 0:
-                out = self.calculate_loss()
-                print(f"Train loss: {out['train']:.4f}" + (f" | Val loss : {out['val']:.4f}" if self.val_data is not None else ""))
+            if ddp:
+                if i % self.eval_iters == 0 and self.gpu_id == 0:
+                    out = self.calculate_loss()
+                    print(f"Train loss: {out['train']:.4f}" + (f" | Val loss : {out['val']:.4f}" if self.val_data is not None else ""))
+            else:
+                if i % self.eval_iters == 0:
+                    out = self.calculate_loss()
+                    print(f"Train loss: {out['train']:.4f}" + (f" | Val loss : {out['val']:.4f}" if self.val_data is not None else ""))
 
     def _save_snapshot(self, epoch):
         snapshot = {}

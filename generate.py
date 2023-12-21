@@ -3,7 +3,7 @@ import os
 from utils import get_tokenizer
 from model import Transformer, ModelArgs
 
-path = os.getcwd() + "/snapshot.pt"
+path = os.getcwd() + "/model/snapshot.pt"
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 block_size = 1024
