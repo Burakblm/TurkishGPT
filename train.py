@@ -166,7 +166,6 @@ class Trainer:
                     targets = targets.to(self.gpu_id if self.ddp else self.device)
                     logits, loss = self.model(inputs, targets)
                     losses[j % self.eval_iters] = loss.item()
-                    print(losses)
                     if j % self.eval_iters == 0:
                         break
             out[i] = losses.mean()
