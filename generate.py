@@ -32,6 +32,9 @@ model.load_state_dict(snapshot["MODEL_STATE"])
 
 model.to(device)
 
-idx = torch.zeros((1, 1), dtype=torch.long, device=device)
-res = model.generate(idx=idx, do_sample=True, top_k=10, temprature=0.8, max_new_tokens=500)[0].tolist()
-print(tokenizer.decode(res))
+if __name__ == "__main__":
+    import sys
+    max_new_token = int(sys.argv[1])
+    idx = torch.zeros((1, 1), dtype=torch.long, device=device)
+    res = model.generate(idx=idx, do_sample=True, top_k=10, temprature=0.8, max_new_tokens=max_new_token)[0].tolist()
+    print(tokenizer.decode(res))
