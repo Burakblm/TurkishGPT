@@ -8,6 +8,8 @@ import re
 
 import torch
 from torch.nn import functional as F
+from torch.cuda.amp import autocast
+from torch.cuda.amp import GradScaler
 import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -29,6 +31,8 @@ current_path = os.getcwd()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 ddp = int(os.environ.get("RANK", -1)) != -1
 dtype = 'bfloat16' if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else 'float16' 
+
+scaler = GradScaler()
 
 
 eval_iters = 200
@@ -112,10 +116,13 @@ class Trainer:
         print(f"Model training continues from the {self.epochs_run} epoch")
 
     def _run_batch(self, inputs, targets):
-        logits, loss = self.model(inputs, targets)
         self.optimizer.zero_grad(set_to_none=True)
-        loss.backward()
-        self.optimizer.step()
+        with autocast(dtype=torch.float16):
+            logits, loss = self.model(inputs, targets)
+        scaler.scale(loss).backward()
+        scaler.step(self.optimizer)
+        scaler.update()
+
 
     def _run_epoch(self, epoch):
         bs = len(next(iter(self.train_data))[0])
