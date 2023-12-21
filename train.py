@@ -223,7 +223,6 @@ def main(total_epoch: int, batch_size: int, save_every: int, snapshot_path: str 
     trainer.train(total_epoch)
     if ddp:
         destroy_ddp()
-
 if __name__ == "__main__":
     import sys
     total_epochs = int(sys.argv[1])
