@@ -30,6 +30,7 @@ model = Transformer(turkgptconfing)
 snapshot = torch.load(path)
 model.load_state_dict(snapshot["MODEL_STATE"])
 
+model.to(device)
 
 idx = torch.zeros((1, 1), dtype=torch.long, device=device)
 res = model.generate(idx=idx, do_sample=True, top_k=10, temprature=0.8, max_new_tokens=500)[0].tolist()
