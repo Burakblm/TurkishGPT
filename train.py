@@ -135,16 +135,16 @@ class Trainer:
             inputs = inputs.to(self.gpu_id if self.ddp else self.device)
             targets = targets.to(self.gpu_id if self.ddp else self.device)
             loss = self._run_batch(inputs, targets)
-            if ddp:
-                if i % self.eval_iters == 0 and self.gpu_id == 0:
-                    out = self.calculate_loss()
-                    print(f"Train loss: {out['train']:.4f}" + (f" | Val loss : {out['val']:.4f}" if self.val_data is not None else ""))
-            else:
-                if i % self.eval_iters == 0:
-                    out = self.calculate_loss()
-                    print(f"Train loss: {out['train']:.4f}" + (f" | Val loss : {out['val']:.4f}" if self.val_data is not None else ""))
             loop.set_description(f"Epoch [{epoch}/{self.epochs}]")
             loop.set_postfix(loss = loss.item())
+        if ddp:
+            if i % self.eval_iters == 0 and self.gpu_id == 0:
+                out = self.calculate_loss()
+                print(f"Train loss: {out['train']:.4f}" + (f" | Val loss : {out['val']:.4f}" if self.val_data is not None else ""))
+        else:
+            if i % self.eval_iters == 0:
+                out = self.calculate_loss()
+                print(f"Train loss: {out['train']:.4f}" + (f" | Val loss : {out['val']:.4f}" if self.val_data is not None else ""))
 
     def _save_snapshot(self, epoch):
         snapshot = {}
@@ -174,7 +174,6 @@ class Trainer:
         
     def train(self, max_epochs: int):
         for epoch in range(self.epochs_run, max_epochs):
-            t0 = time.time()
             self._run_epoch(epoch)
             if self.ddp:
                 if self.gpu_id == 0 and epoch % self.save_every == 0:
@@ -182,12 +181,6 @@ class Trainer:
             else:
                 if epoch % self.save_every == 0:
                     self._save_snapshot(epoch)
-
-            t1 = time.time()
-            dt = t1 - t0
-            t0 = t1
-            print(f"Epoch: {epoch}: time: {dt}s\n")
-
 
 model_args = dict(
         vocab_size=vocab_size,
