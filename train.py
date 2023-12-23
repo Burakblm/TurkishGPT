@@ -160,7 +160,7 @@ class Trainer:
         for i in ["train", "val"]:
             if self.split_data[i] is not None:
                 losses = torch.zeros(self.num_samples_for_loss)
-                loop = tqdm(enumerate(self.split_data[i]), total=len(self.num_samples_for_loss)-1, leave=True)
+                loop = tqdm(enumerate(self.split_data[i]), total=self.num_samples_for_loss-1, leave=True)
                 for j, (inputs, targets) in loop:
                     j += 1
                     inputs = inputs.to(self.gpu_id if self.ddp else self.device)
