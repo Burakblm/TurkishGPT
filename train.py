@@ -35,7 +35,7 @@ dtype = 'bfloat16' if torch.cuda.is_available() and torch.cuda.is_bf16_supported
 scaler = GradScaler()
 
 
-eval_iters = 100
+num_samples_for_loss = 100
 max_iters = 100
 block_size = 128
 batch_size = 16
@@ -52,7 +52,7 @@ class TrainArgs:
     num_epochs: int = 10
     batch_size: int = 16
     block_size: int = 2048
-    eval_iters: int = 200
+    num_samples_for_loss: int = 200
     learning_rate: float = 1e-4
     dataset: str = "nutuk"
     vocab_size: int = 32000
@@ -81,7 +81,7 @@ class Trainer:
                 snapshot_path: str,
                 epochs: int,
                 ddp: bool = False,
-                eval_iters: int = 100,
+                num_samples_for_loss: int = 100,
                 device: Optional[str] = None,
                 args: Optional[TrainArgs] = None,
                 val_data: Optional[Dataset] = None,
@@ -90,7 +90,7 @@ class Trainer:
         self.args = args
         self.ddp = ddp
         self.device = device
-        self.eval_iters = eval_iters
+        self.num_samples_for_loss = num_samples_for_loss
         self.epochs = epochs
         snapshot_path = os.getcwd() + "/model/" + snapshot_path
 
@@ -138,11 +138,11 @@ class Trainer:
             loop.set_description(f"Epoch [{epoch}/{self.epochs}]")
             loop.set_postfix(loss = loss.item())
         if ddp:
-            if i % self.eval_iters == 0 and self.gpu_id == 0:
+            if i % self.num_samples_for_loss == 0 and self.gpu_id == 0:
                 out = self.calculate_loss()
                 print(f"Train loss: {out['train']:.4f}" + (f" | Val loss : {out['val']:.4f}" if self.val_data is not None else ""))
         else:
-            if i % self.eval_iters == 0:
+            if i % self.num_samples_for_loss == 0:
                 out = self.calculate_loss()
                 print(f"Train loss: {out['train']:.4f}" + (f" | Val loss : {out['val']:.4f}" if self.val_data is not None else ""))
 
@@ -151,7 +151,7 @@ class Trainer:
         snapshot["MODEL_STATE"] = self.model.module.state_dict() if self.ddp else self.model.state_dict()
         snapshot["EPOCHS_RUN"] = epoch
         torch.save(snapshot, os.getcwd() + "/model/snapshot.pt")
-        print(f"Epoch {epoch} | training snapshot save at snapshot.pt")
+        print(f"Epoch {epoch} | training snapshot save at snapshot.pt\n")
 
     @torch.no_grad()
     def calculate_loss(self):
@@ -159,17 +159,17 @@ class Trainer:
         self.model.eval()
         for i in ["train", "val"]:
             if self.split_data[i] is not None:
-                losses = torch.zeros(self.eval_iters)
-                loop = tqdm(enumerate(self.split_data[i]), total=len(self.split_data[i]), leave=True)
+                losses = torch.zeros(self.num_samples_for_loss)
+                loop = tqdm(enumerate(self.split_data[i]), total=len(self.num_samples_for_loss)-1, leave=True)
                 for j, (inputs, targets) in loop:
                     j += 1
                     inputs = inputs.to(self.gpu_id if self.ddp else self.device)
                     targets = targets.to(self.gpu_id if self.ddp else self.device)
                     logits, loss = self.model(inputs, targets)
-                    losses[j % self.eval_iters] = loss.item()
+                    losses[j % self.num_samples_for_loss] = loss.item()
                     loop.set_description(f"{i} Average Loss")
                     loop.set_postfix(loss = loss.item())
-                    if j % self.eval_iters == 0:
+                    if j % self.num_samples_for_loss == 0:
                         break
             out[i] = losses.mean()
         self.model.train()
@@ -226,7 +226,7 @@ def main(total_epoch: int, batch_size: int, save_every: int, snapshot_path: str 
     train_data, val_data, model, optimizer = load_train_objs()
     train_data = prepare_dataloader(train_data, batch_size=batch_size)
     val_data = prepare_dataloader(val_data, batch_size=batch_size)
-    trainer = Trainer(model=model, train_data=train_data, val_data=val_data, optimizer=optimizer, epochs=total_epoch, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path, eval_iters=eval_iters, device=device)
+    trainer = Trainer(model=model, train_data=train_data, val_data=val_data, optimizer=optimizer, epochs=total_epoch, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path, num_samples_for_loss=num_samples_for_loss, device=device)
     #num_of_params = sum(p.numel() for p in model.parameters())
     num_of_params = '{:,}'.format(sum(p.numel() for p in model.parameters())).replace(",", ".")
     print(f"number of model parameters: {num_of_params}")
