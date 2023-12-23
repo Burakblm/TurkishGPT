@@ -130,7 +130,7 @@ class Trainer:
     def _run_epoch(self, epoch):
         bs = len(next(iter(self.train_data))[0])
         print(f"[GPU:{self.gpu_id if self.ddp else self.device}] Epoch {epoch} | Batchsize: {bs} | Steps: {len(self.train_data)}")
-        loop = tqdm(enumerate(self.train_data), total=len(self.train_data), leave=False)
+        loop = tqdm(enumerate(self.train_data), total=len(self.train_data), leave=True)
         for i, (inputs, targets) in loop:
             inputs = inputs.to(self.gpu_id if self.ddp else self.device)
             targets = targets.to(self.gpu_id if self.ddp else self.device)
