@@ -114,7 +114,10 @@ class Trainer:
 
     def _load_snapshot(self, snapshot_path):
         snapshot = torch.load(snapshot_path)
-        self.model.load_state_dict(snapshot["MODEL_STATE"])
+        if isinstance(self.model, torch.nn.parallel.DistributedDataParallel):
+            self.model.module.load_state_dict(snapshot["MODEL_STATE"])
+        else:
+            self.model.load_state_dict(snapshot["MODEL_STATE"])
         self.epochs_run = snapshot["EPOCHS_RUN"]
         print(f"Model training continues from the {self.epochs_run} epoch")
 
