@@ -141,13 +141,12 @@ class Trainer:
             loop.set_description(f"Epoch [{epoch}/{self.epochs}]")
             loop.set_postfix(loss = loss.item())
         if ddp:
-            if i % self.num_samples_for_loss == 0 and self.gpu_id == 0:
+            if self.gpu_id == 0:
                 out = self.calculate_loss()
                 print(f"Train loss: {out['train']:.4f}" + (f" | Val loss : {out['val']:.4f}" if self.val_data is not None else ""))
         else:
-            if i % self.num_samples_for_loss == 0:
-                out = self.calculate_loss()
-                print(f"Train loss: {out['train']:.4f}" + (f" | Val loss : {out['val']:.4f}" if self.val_data is not None else ""))
+            out = self.calculate_loss()
+            print(f"Train loss: {out['train']:.4f}" + (f" | Val loss : {out['val']:.4f}" if self.val_data is not None else ""))
 
     def _save_snapshot(self, epoch):
         snapshot = {}
