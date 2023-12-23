@@ -160,12 +160,15 @@ class Trainer:
         for i in ["train", "val"]:
             if self.split_data[i] is not None:
                 losses = torch.zeros(self.eval_iters)
-                for j, (inputs, targets) in enumerate(self.split_data[i]):
+                loop = tqdm(enumerate(self.split_data[i]), total=len(self.split_data[i]), leave=True)
+                for j, (inputs, targets) in loop:
                     j += 1
                     inputs = inputs.to(self.gpu_id if self.ddp else self.device)
                     targets = targets.to(self.gpu_id if self.ddp else self.device)
                     logits, loss = self.model(inputs, targets)
                     losses[j % self.eval_iters] = loss.item()
+                    loop.set_description(f"{i} Average Loss")
+                    loop.set_postfix(loss = loss.item())
                     if j % self.eval_iters == 0:
                         break
             out[i] = losses.mean()
