@@ -3,6 +3,7 @@ from torch.distributed import init_process_group, destroy_process_group
 import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.nn import functional as F
 
 import os
 
@@ -44,11 +45,20 @@ snapshot = torch.load(path)
 model.load_state_dict(snapshot["MODEL_STATE"])
 
 
-def generate_text(model):
+def generate_text(model, max_token):
     model.eval()
     idx = torch.zeros((1, 1), dtype=torch.long, device=device)
-    res = model.generate(idx=idx, do_sample=True, top_k=10, temprature=0.8, max_new_tokens=500)[0].tolist()
-    return tokenizer.decode(res)
+
+    with torch.no_grad():
+        for _ in range(max_token):
+            logits = model(idx)
+            logits = logits[:, -1, :]
+            props = F.softmax(logits, dim=-1)
+            idx_next = torch.multinomial(props)
+            idx = torch.cat((idx, idx_next), dim=1)
+            
+
+    return tokenizer.decode(idx)
 
 
 def main(rank: int, world_size: int):
