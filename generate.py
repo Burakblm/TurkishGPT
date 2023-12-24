@@ -56,8 +56,9 @@ def generate_text(model, max_token):
             props = F.softmax(logits, dim=-1)
             idx_next = torch.multinomial(props)
             idx = torch.cat((idx, idx_next), dim=1)
+            
 
-
+    idx = idx[0].tolist()
     return tokenizer.decode(idx)
 
 
