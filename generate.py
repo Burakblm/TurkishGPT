@@ -66,13 +66,17 @@ def run(rank, world_size):
         torch.cuda.set_device(rank)
 
     ddp_setup(rank, world_size)
-    model = None
+    
+    model =  model # Örnek bir model yükleme işlemi.
 
     if torch.cuda.is_available():
         model.cuda(rank)
         model = DDP(model, device_ids=[rank])
 
     gen_text = generate_text(model)
+
+    print(f"GPU {rank} generated text : {gen_text}")
+    destroy_process_group()
 
 
 if __name__ == "__main__":
