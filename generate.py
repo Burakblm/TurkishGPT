@@ -56,7 +56,7 @@ def generate_text(model, max_token):
             props = F.softmax(logits, dim=-1)
             idx_next = torch.multinomial(props)
             idx = torch.cat((idx, idx_next), dim=1)
-            
+
 
     return tokenizer.decode(idx)
 
@@ -82,7 +82,7 @@ def run(rank, world_size):
         model.cuda(rank)
         model = DDP(model, device_ids=[rank])
 
-    gen_text = generate_text(model)
+    gen_text = generate_text(model, 100)
 
     print(f"GPU {rank} generated text : {gen_text}")
     destroy_process_group()
