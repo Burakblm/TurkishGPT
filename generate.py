@@ -51,7 +51,7 @@ def generate_text(model, max_token):
 
     with torch.no_grad():
         for _ in range(max_token):
-            logits = model(idx)
+            logits, _ = model(idx)
             logits = logits[:, -1, :]
             props = F.softmax(logits, dim=-1)
             idx_next = torch.multinomial(props)
