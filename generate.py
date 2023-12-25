@@ -57,9 +57,7 @@ def generate_text(model, max_token):
             idx_next = torch.multinomial(props, num_samples=1)
             idx = torch.cat((idx, idx_next), dim=1)
             
-
-    idx = idx[0].tolist()
-    return tokenizer.decode(idx)
+    return tokenizer.decode(idx[0].tolist())
 
 
 def main(rank: int, world_size: int):
