@@ -16,6 +16,7 @@ from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 from torch.utils.data import DataLoader, Dataset
+from torch.distributed.fsdp import fully_sharded_data_parallel as FSDP
 import numpy as np
 import os
 
