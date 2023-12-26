@@ -1,8 +1,5 @@
 import torch
 from torch.distributed import init_process_group, destroy_process_group
-import torch.multiprocessing as mp
-from torch.utils.data.distributed import DistributedSampler
-from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.nn import functional as F
 
 import os
@@ -13,11 +10,6 @@ from model import Transformer, ModelArgs
 path = os.getcwd() + "/model/snapshot.pt"
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 dtype = "bfloat16" if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else "flaot16"
-
-def ddp_setup(rank, world_size):
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "12344"
-    init_process_group(backend="nccl", rank=rank, world_size=world_size)
 
 
 block_size = 1024
@@ -44,15 +36,16 @@ model = Transformer(turkgptconfing)
 snapshot = torch.load(path)
 model.load_state_dict(snapshot["MODEL_STATE"])
 
+model.to(device)
 
-def generate_text(model, max_token):
+def generate_text(model, max_token: int = 100, temprature: float = 1.0):
     model.eval()
     idx = torch.zeros((1, 1), dtype=torch.long, device=device)
 
     with torch.no_grad():
         for _ in range(max_token):
             logits, _ = model(idx)
-            logits = logits[:, -1, :]
+            logits = logits[:, -1, :] / temprature
             props = F.softmax(logits, dim=-1)
             idx_next = torch.multinomial(props, num_samples=1)
             idx = torch.cat((idx, idx_next), dim=1)
@@ -60,33 +53,10 @@ def generate_text(model, max_token):
     return tokenizer.decode(idx[0].tolist())
 
 
-def main(rank: int, world_size: int):
-    if torch.cuda.is_available():
-        n_gpus = torch.cuda.device_count()
-    ddp_setup(rank=rank, world_size=world_size)
-    model.cuda(rank)
-
-    mp.spawn(run, args=(rank, world_size, n_gpus), nprocs=n_gpus)
-
-
-
-def run(rank, world_size):
-    global model
-    if torch.cuda.is_available():
-        torch.cuda.set_device(rank)
-
-    ddp_setup(rank, world_size)
-    
-    if torch.cuda.is_available():
-        model.cuda(rank)
-        model = DDP(model, device_ids=[rank])
-
-    gen_text = generate_text(model, 100)
-
-    print(f"GPU {rank} generated text : {gen_text}")
-    destroy_process_group()
-
 
 if __name__ == "__main__":
-    world_size = torch.cuda.device_count() if torch.cuda.is_available() else 1
-    mp.spawn(run, args=(world_size,), nprocs=world_size)
+    import sys
+    max_token = int(sys.argv[1])
+    temprature = float(sys.argv[2])
+    print(generate_text(max_token=max_token, temprature=temprature))
+    
