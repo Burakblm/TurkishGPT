@@ -36,8 +36,6 @@ model = Transformer(turkgptconfing)
 snapshot = torch.load(path)
 model.load_state_dict(snapshot["MODEL_STATE"])
 
-model.to(device)
-
 def generate_text(model, max_token: int = 100, temprature: float = 1.0):
     model.eval()
     idx = torch.zeros((1, 1), dtype=torch.long, device=device)
@@ -56,7 +54,8 @@ def generate_text(model, max_token: int = 100, temprature: float = 1.0):
 
 if __name__ == "__main__":
     import sys
+    model.to(device)
     max_token = int(sys.argv[1])
     temprature = float(sys.argv[2])
-    print(generate_text(max_token=max_token, temprature=temprature))
+    print(generate_text(model, max_token=max_token, temprature=temprature))
     
