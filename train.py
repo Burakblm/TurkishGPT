@@ -82,6 +82,7 @@ class Trainer:
                 snapshot_path: str,
                 epochs: int,
                 ddp: bool = False,
+                compile: bool = False,
                 num_samples_for_loss: int = 100,
                 device: Optional[str] = None,
                 args: Optional[TrainArgs] = None,
@@ -101,6 +102,8 @@ class Trainer:
             self.model = DDP(self.model, device_ids=[self.gpu_id])
         else:
             self.model = model.to(self.device)
+            if compile:
+                self.model = torch.compile(self.model)
 
         self.epochs_run = 0
         self.train_data = train_data
@@ -229,7 +232,7 @@ def main(total_epoch: int, batch_size: int, save_every: int, snapshot_path: str 
     train_data, val_data, model, optimizer = load_train_objs()
     train_data = prepare_dataloader(train_data, batch_size=batch_size)
     val_data = prepare_dataloader(val_data, batch_size=batch_size)
-    trainer = Trainer(model=model, train_data=train_data, val_data=val_data, optimizer=optimizer, epochs=total_epoch, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path, num_samples_for_loss=num_samples_for_loss, device=device)
+    trainer = Trainer(model=model, train_data=train_data, val_data=val_data, optimizer=optimizer, epochs=total_epoch, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path, num_samples_for_loss=num_samples_for_loss, device=device, compile=True)
     #num_of_params = sum(p.numel() for p in model.parameters())
     num_of_params = '{:,}'.format(sum(p.numel() for p in model.parameters())).replace(",", ".")
     print(f"number of model parameters: {num_of_params}")
