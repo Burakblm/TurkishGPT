@@ -5,7 +5,7 @@ import os
 
 tokenizer = get_tokenizer()
 
-def prepare_data(path: str = "nutuk", split_rate: float = 0.9):
+def prepare_data(path: str = "data.txt", split_rate: float = 0.9):
     with open(path, "r") as f:
         data = f.read()
     
