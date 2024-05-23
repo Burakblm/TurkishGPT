@@ -11,7 +11,7 @@ from torch.nn import functional as F
 @dataclass
 class ModelArgs:
     block_size: int = 1024
-    vocab_size: int = 32000
+    vocab_size: int = 32002
     n_layer: int = 12
     n_head: int = 12
     n_embd: int = 768

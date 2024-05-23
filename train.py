@@ -32,6 +32,8 @@ from utils import get_tokenizer
 load_dotenv()
 
 DATA_PATH = os.getenv("DATA_PATH")
+MODEL_PATH = os.getenv("MODEL_PATH")
+MODEL_DIR = os.getenv("MODEL_DIR")
 
 tokenizer = get_tokenizer()
 
@@ -46,7 +48,7 @@ num_samples_for_loss = 100
 max_iters = 100
 block_size = 1024
 batch_size = 16
-vocab_size= 32000
+vocab_size= 32002
 n_layer = 12
 n_head = 12
 n_embd= 768
@@ -99,7 +101,7 @@ class Trainer:
         self.device = device
         self.num_samples_for_loss = num_samples_for_loss
         self.epochs = epochs
-        snapshot_path = os.getcwd() + "/model/" + snapshot_path
+        snapshot_path = snapshot_path
 
         if self.ddp:
             self.gpu_id = int(os.environ["LOCAL_RANK"])
@@ -208,7 +210,7 @@ turkgptconfing = ModelArgs(**model_args)
 def load_train_objs(training_type = "pretraining"):
     train_data = GPTDataset("train", batch_size=1, block_size=block_size)
     val_data = GPTDataset("val", batch_size=1, block_size=block_size)
-    
+
     if training_type == "pretraining":
         model = Transformer(turkgptconfing)
         model = model.to(device)
@@ -263,4 +265,5 @@ if __name__ == "__main__":
     total_epochs = int(sys.argv[1])
     batch_size = int(sys.argv[2])
     save_every = int(sys.argv[3])
-    main(total_epoch=total_epochs, batch_size=batch_size, save_every=save_every)
+    snapshot_path = str(sys.argv[4])
+    main(total_epoch=total_epochs, batch_size=batch_size, save_every=save_every, snapshot_path=snapshot_path)

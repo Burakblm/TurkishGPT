@@ -38,9 +38,20 @@ def load_tensor(path: str = "train"):
     data = torch.load(path)
     return data
 
+def train_split(path: str = "train.pt"):
+    train_data_path = path + "/train.pt"
+    data = torch.load(train_data_path)
+    train_data = data[: len(data) * 0.97]
+    val_data = data[len(data) * 0.03 :]
+    torch.save(train_data, train_data_path)
+    val_data_path = path + "/val.pt"
+    torch.save(val_data, val_data_path)
+
 
 if __name__ == "__main__":
     import sys
-    data_path = str(sys.argv[1])
-    split_rate = float(sys.argv[2])
-    prepare_data(data_path, split_rate)
+    #data_path = str(sys.argv[1])
+    #split_rate = float(sys.argv[2])
+    #prepare_data(data_path, split_rate)
+    train_split_path = str(sys.argv[1])
+    train_split(path=train_split_path)

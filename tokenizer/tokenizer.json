@@ -29,6 +29,24 @@
       "rstrip": false,
       "normalized": false,
       "special": true
+    },
+    {
+      "id": 32000,
+      "content": "<user>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 32001,
+      "content": "<bot>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
     }
   ],
   "normalizer": {
@@ -134,6 +152,7 @@
     "end_of_word_suffix": null,
     "fuse_unk": true,
     "byte_fallback": true,
+    "ignore_merges": false,
     "vocab": {
       "<unk>": 0,
       "<s>": 1,
