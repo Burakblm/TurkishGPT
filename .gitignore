@@ -1,0 +1,6 @@
+__pycache__/
+TODO.txt
+.DS_Store
+/venv
+data/**/*.pt
+data/**/*.txt
