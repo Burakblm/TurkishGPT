@@ -15,5 +15,3 @@ def get_tokenizer():
     model_path = os.getcwd() + "/tokenizer"
     tokenizer =  AutoTokenizer.from_pretrained(model_path, use_fast=True)
     return tokenizer
-
-install_tokenizer()

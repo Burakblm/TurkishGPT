@@ -22,7 +22,7 @@ def prepare_data(path: str = "data.txt", split_rate: float = 0.9):
     print(f"Train data size: {len(train_data)}")
     val_data = data[int(data_size * split_rate):]
     print(f"Validation data size: {len(val_data)}")
-
+    
     save_tensor(train_data, "train")
     save_tensor(val_data, "val")
     
@@ -39,10 +39,13 @@ def load_tensor(path: str = "train"):
     return data
 
 def train_split(path: str = "train.pt"):
+    split_rate = 0.97
     train_data_path = path + "/train.pt"
     data = torch.load(train_data_path)
-    train_data = data[: len(data) * 0.97]
-    val_data = data[len(data) * 0.03 :]
+    data_size = len(data)
+    print(type(data))
+    train_data = data[:int(data_size * split_rate)]
+    val_data = data[int(data_size * split_rate):]
     torch.save(train_data, train_data_path)
     val_data_path = path + "/val.pt"
     torch.save(val_data, val_data_path)
