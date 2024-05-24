@@ -7,6 +7,8 @@ import random
 import re
 from tqdm import tqdm
 from dotenv import load_dotenv
+from prepare_data import load_tensor
+
 
 import torch
 from torch.nn import functional as F
@@ -207,9 +209,18 @@ model_args = dict(
     )
 turkgptconfing = ModelArgs(**model_args)
 
-def load_train_objs(training_type = "pretraining"):
+def load_train_objs(training_type = "pretraining", data_path: str = "train.pt", split_rate: float = 0.97):
+    data = load_tensor(data_path)
+    data_size = len(data)
+    print(f"All data size: {data_size}")
+    train_data = data[:int(data_size * split_rate)]
+    print(f"Train data size: {len(train_data)}")
+    val_data = data[int(data_size * split_rate):]
+    print(f"Validation data size: {len(val_data)}")
+    train_data = GPTDataset(data=train_data, batch_size=1, block_size=block_size)
+    val_data = GPTDataset(data=val_data, batch_size=1, block_size=block_size)
+    # yeni kodlar
     train_data = GPTDataset("train", batch_size=1, block_size=block_size)
-    val_data = GPTDataset("val", batch_size=1, block_size=block_size)
 
     if training_type == "pretraining":
         model = Transformer(turkgptconfing)
@@ -247,10 +258,10 @@ def prepare_dataloader(dataset: Dataset, batch_size: int):
             num_workers=0
         )
 
-def main(total_epoch: int, batch_size: int, save_every: int, training_type: str = "pretraining", snapshot_path: str = "snapshot.pt"):
+def main(total_epoch: int, batch_size: int, save_every: int, training_type: str = "pretraining", snapshot_path: str = "snapshot.pt", data_path="train.pt"):
     if ddp:
         ddp_setup()
-    train_data, val_data, model, optimizer = load_train_objs(training_type=training_type)
+    train_data, val_data, model, optimizer = load_train_objs(training_type=training_type, data_path=data_path)
     train_data = prepare_dataloader(train_data, batch_size=batch_size)
     val_data = prepare_dataloader(val_data, batch_size=batch_size)
     trainer = Trainer(model=model, train_data=train_data, val_data=val_data, optimizer=optimizer, epochs=total_epoch, ddp=ddp, save_every=save_every, snapshot_path=snapshot_path, num_samples_for_loss=num_samples_for_loss, device=device)
@@ -266,4 +277,5 @@ if __name__ == "__main__":
     batch_size = int(sys.argv[2])
     save_every = int(sys.argv[3])
     snapshot_path = str(sys.argv[4])
-    main(total_epoch=total_epochs, batch_size=batch_size, save_every=save_every, snapshot_path=snapshot_path)
+    data_path = str(sys.argv[5])
+    main(total_epoch=total_epochs, batch_size=batch_size, save_every=save_every, snapshot_path=snapshot_path, data_path=data_path)

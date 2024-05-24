@@ -3,11 +3,12 @@ import numpy as np
 import math
 import random
 from prepare_data import load_tensor
+import torch
 
 
 class GPTDataset(Dataset):
-    def __init__(self, data: str = "train", block_size: int = 1024, batch_size: int = 8):
-        self.data = load_tensor(data)
+    def __init__(self, data: torch.Tensor, block_size: int = 1024, batch_size: int = 8):
+        self.data = data
         self.block_size = block_size
         self.batch_size = batch_size
         self.n_samples = len(self.data) - self.block_size
