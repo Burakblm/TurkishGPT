@@ -103,7 +103,7 @@ class Trainer:
         self.device = device
         self.num_samples_for_loss = num_samples_for_loss
         self.epochs = epochs
-        snapshot_path = snapshot_path
+        self.snapshot_path = snapshot_path
 
         if self.ddp:
             self.gpu_id = int(os.environ["LOCAL_RANK"])
@@ -164,7 +164,7 @@ class Trainer:
         snapshot = {}
         snapshot["MODEL_STATE"] = self.model.module.state_dict() if self.ddp else self.model.state_dict()
         snapshot["EPOCHS_RUN"] = epoch
-        torch.save(snapshot, os.getcwd() + "/model/snapshot.pt")
+        torch.save(snapshot, self.snapshot_path)
         print(f"Epoch {epoch} | training snapshot save at snapshot.pt\n")
 
     @torch.no_grad()
@@ -219,8 +219,6 @@ def load_train_objs(training_type = "pretraining", data_path: str = "train.pt", 
     print(f"Validation data size: {len(val_data)}")
     train_data = GPTDataset(data=train_data, batch_size=1, block_size=block_size)
     val_data = GPTDataset(data=val_data, batch_size=1, block_size=block_size)
-    # yeni kodlar
-    train_data = GPTDataset("train", batch_size=1, block_size=block_size)
 
     if training_type == "pretraining":
         model = Transformer(turkgptconfing)
